@@ -1,0 +1,57 @@
+import os
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import quote
+
+def download_images(query, num_images):
+    # Create a directory to store the downloaded images
+    if not os.path.exists(query):
+        os.makedirs(query)
+
+    # URL encode the query to use in the Google Images search URL
+    query_encoded = quote(query)
+
+    # Generate the Google Images search URL
+    url = f"https://www.google.com/search?q={query_encoded}&tbm=isch"
+
+    # Send a GET request to the Google Images search URL
+    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+
+    # Parse the HTML content using BeautifulSoup
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    # Find all the image elements in the HTML
+    image_elements = soup.find_all('img')
+
+    count = 0
+    for element in image_elements:
+        if count >= num_images:
+            break
+
+        # Extract the image URL from the 'src' attribute
+        image_url = element['src']
+
+        try:
+            # Send a GET request to download the image
+            response = requests.get(image_url, stream=True)
+
+            # Generate a unique filename for each image
+            filename = f"{query}/{query}_{count}.jpg"
+
+            # Save the image to the local directory
+            with open(filename, 'wb') as file:
+                for chunk in response.iter_content(1024):
+                    file.write(chunk)
+
+            print(f"Downloaded image {count + 1}/{num_images}")
+            count += 1
+
+        except:
+            print(f"Error downloading image {count + 1}")
+
+    print("Download completed.")
+    # Example usage
+name = input("Enter the person's name: ")
+num_photos = 50
+
+download_images(name, num_photos)
